@@ -1,4 +1,3 @@
-import pandas as pd
 import requests
 import pickle
 import re
@@ -57,15 +56,15 @@ def parse_dictionary_content_page(url, name):
     page = requests.get(url, verify=False)
     soup = BeautifulSoup(page.content, "html.parser")
     videos = soup.find_all("iframe")
-    df = pd.DataFrame()
+    video_dict = {}
     for video in videos:
         row = {}
         row["name"] = name
         row["type"] = "youtube"
         row["text"] = get_description(video)
         row["location"] = video["src"]
-        df = df.append(row, ignore_index=True)
-    return df
+        video_dict[name] = row
+    return video_dict
 
 
 def get_description(element):
@@ -97,34 +96,37 @@ def smart_truncate(content, length=300, suffix="..."):
 def post_random_content(main_page, reddit_creds, content_type="random"):
     if content_type == "random":
         content_type = random.choice(["image", "youtube", "mp4"])
-    content_df = pd.DataFrame
+    content_dict = {}
     i = 0
     while True:
         name = random.choice([*main_page.keys()])
         url = main_page[name]
-        content_df = parse_dictionary_content_page(url, name)
+        content_dict = parse_dictionary_content_page(url, name)
         i += 1
-        if i > 100 or not content_df.empty:
+        if i > 100 or len(content_dict) > 0:
             break
-    chosen_row = content_df.iloc[random.choice(content_df.index)]
+    chosen_content = content_dict[random.choice([*content_dict.keys()])]
     if content_type == "image":
         pass
     elif content_type == "youtube":
-        post_youtube(chosen_row, reddit_creds)
+        post_youtube(chosen_content, reddit_creds)
     elif content_type == "mp4":
         pass
-    return chosen_row
+    return chosen_content
 
 
 def post_youtube(df_row, reddit_creds):
     title = df_row["name"] + " | " + df_row["text"]
     url = df_row["location"]
+    session = requests.Session()
+    session.verify = False  # Disable SSL warnings
     reddit = praw.Reddit(
         user_agent="test",
         client_id=reddit_creds["CLIENT_ID"],
         client_secret=reddit_creds["CLIENT_SECRET"],
         username=reddit_creds["USERNAME"],
         password=reddit_creds["PASSWORD"],
+        requestor_kwargs={"session": session},
     )
     reddit.validate_on_submit = True
     reddit.subreddit("learnASL").submit(title=title, url=url)
