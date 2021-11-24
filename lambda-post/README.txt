@@ -1,8 +1,12 @@
-TODO:
-Remove pandas and numpy as dependencies. Numpy's reliance on C is causing the error
-
 To activate virtual environment:
-source bin/activate
+source lambda-post-venv/bin/activate
+
+Install dependencies:
+pip install requests
+pip install boto3
+pip install praw
+pip install beautifulsoup4
+pip install aws_cdk.core
 
 To test (in virtual environment):
 python -c 'import lambda_function; print( lambda_function.lambda_handler("foo", "bar"))'

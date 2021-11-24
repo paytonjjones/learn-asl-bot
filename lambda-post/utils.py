@@ -1,5 +1,4 @@
 import requests
-import pickle
 import re
 import random
 import praw
@@ -8,7 +7,8 @@ from bs4 import BeautifulSoup
 
 try:
     import aws_cdk.aws_ssm as ssm
-except:
+except Exception as e:
+    print(str(e))
     pass
 
 

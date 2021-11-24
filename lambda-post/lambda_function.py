@@ -15,8 +15,9 @@ def lambda_handler(event, context):
     )
     try:
         creds = load_creds_aws()
-    except:
+    except Exception as e:
         creds = pickle.load(open("../creds", "rb"))
+        print(str(e))
 
     # Post
     try:
