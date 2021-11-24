@@ -1,6 +1,5 @@
 import pandas as pd
 import requests
-import pickle
 import re
 import random
 import praw
@@ -14,7 +13,7 @@ except:
 
 
 def parse_entire_dictionary():
-    stem = "https://lifeprint.com/asl101/index/"
+    stem = "http://lifeprint.com/asl101/index/"
     full_dict = {}
     for letter in "abcdefghijklmnopqrstuvwxyz":  #
         letter_dict = parse_dictionary_main_page(stem + letter + ".htm")
@@ -38,7 +37,7 @@ def parse_dictionary_main_page(url):
     for blob in links_html:
         text = blob.text
         link = blob.get("href")
-        link = re.sub("\.\.", "https://lifeprint.com/asl101/", link)
+        link = re.sub("\.\.", "http://lifeprint.com/asl101/", link)
         master_dict[text] = link
     return master_dict
 
@@ -119,12 +118,15 @@ def post_random_content(main_page, reddit_creds, content_type="random"):
 def post_youtube(df_row, reddit_creds):
     title = df_row["name"] + " | " + df_row["text"]
     url = df_row["location"]
+    session = requests.Session()
+    session.verify = False  # Disable SSL warnings
     reddit = praw.Reddit(
         user_agent="test",
         client_id=reddit_creds["CLIENT_ID"],
         client_secret=reddit_creds["CLIENT_SECRET"],
         username=reddit_creds["USERNAME"],
         password=reddit_creds["PASSWORD"],
+        requestor_kwargs={"session": session},
     )
     reddit.validate_on_submit = True
     reddit.subreddit("learnASL").submit(title=title, url=url)
