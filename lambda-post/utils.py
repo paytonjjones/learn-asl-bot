@@ -4,16 +4,13 @@ import re
 import random
 import praw
 import time
+import pickle
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
-try:
-    import aws_cdk.aws_ssm as ssm
-except Exception as e:
-    logger.warn(f"ssm module could not be loaded: {e}")
-    pass
+# import aws_cdk.aws_ssm as ssm
 
 
 def parse_entire_dictionary():
@@ -151,4 +148,10 @@ def load_creds_aws():
     creds["PASSWORD"] = ssm.StringParameter.value_for_string_parameter(
         self, "reddit_asl_password"
     )
+    return creds
+
+
+def load_creds_pickle():
+    with open("creds", "rb") as f:
+        creds = pickle.load(f)
     return creds
