@@ -1,3 +1,4 @@
+import logging
 import json
 import pickle
 import boto3
@@ -5,6 +6,9 @@ from botocore import UNSIGNED
 from botocore.client import Config
 
 from utils import post_random_content, load_creds_aws
+
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 
 def lambda_handler(event, context):
@@ -17,15 +21,15 @@ def lambda_handler(event, context):
         creds = load_creds_aws()
     except Exception as e:
         creds = pickle.load(open("../creds", "rb"))
-        print(str(e))
+        logger.warn(f"creds could not be loaded from AWS: {e}")
 
     # Post
     try:
         post_random_content(entire_dict, creds, content_type="youtube")
-        return {
-            "statusCode": 200,
-            "body": json.dumps("Content posted with no exceptions"),
-        }
     except Exception as e:
         return {"statusCode": 400, "body": json.dumps("Error:" + str(e))}
+    return {
+        "statusCode": 200,
+        "body": json.dumps("Content successfully posted to Reddit"),
+    }
 

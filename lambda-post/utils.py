@@ -1,3 +1,4 @@
+import logging
 import requests
 import re
 import random
@@ -5,10 +6,13 @@ import praw
 import time
 from bs4 import BeautifulSoup
 
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+
 try:
     import aws_cdk.aws_ssm as ssm
 except Exception as e:
-    print(str(e))
+    logger.warn(f"ssm module could not be loaded: {e}")
     pass
 
 
@@ -130,7 +134,7 @@ def post_youtube(df_row, reddit_creds):
     )
     reddit.validate_on_submit = True
     reddit.subreddit("learnASL").submit(title=title, url=url)
-    print("YouTube embedded video posted to Reddit")
+    logger.info("YouTube embedded video posted to Reddit")
 
 
 def load_creds_aws():

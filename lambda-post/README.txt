@@ -1,3 +1,6 @@
+#TODO:
+-try installing aws_sdk.sdk?
+
 To activate virtual environment:
 source lambda-post-venv/bin/activate
 
