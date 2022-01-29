@@ -1,3 +1,8 @@
+try:
+    import unzip_requirements
+except ImportError:
+    pass
+
 import logging
 import json
 import pickle
@@ -5,7 +10,7 @@ import boto3
 from botocore import UNSIGNED
 from botocore.client import Config
 
-from utils import post_random_content, load_creds_pickle
+from src.lambda_post.utils import post_random_content, load_creds_env
 
 # from utils import load_creds_aws
 
@@ -13,7 +18,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
 
-def lambda_handler(event, context):
+def lambda_post(event, context):
     # Load from S3 bucket
     s3 = boto3.resource("s3", config=Config(signature_version=UNSIGNED))
     entire_dict = pickle.loads(
@@ -24,7 +29,7 @@ def lambda_handler(event, context):
     # except Exception as e:
     #     creds = pickle.load(open("../creds", "rb"))
     #     logger.warn(f"creds could not be loaded from AWS: {e}")
-    creds = load_creds_pickle()
+    creds = load_creds_env()
 
     # Post
     try:

@@ -1,6 +1,16 @@
 # Credentials
 creds
 
+
+# Other
+*.zip
+TODO
+
+# Serverless
+.serverless
+node_modules/
+*.requirements
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -1,45 +1,39 @@
+import logging
+import os
 import requests
-import pickle
 import re
 import random
 import praw
-import time
+import pickle
+
 from bs4 import BeautifulSoup
 
-try:
-    import aws_cdk.aws_ssm as ssm
-except:
-    pass
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+
+# import aws_cdk.aws_ssm as ssm
 
 
-def parse_entire_dictionary():
-    stem = "https://lifeprint.com/asl101/index/"
-    full_dict = {}
-    for letter in "abcdefghijklmnopqrstuvwxyz":  #
-        letter_dict = parse_dictionary_main_page(stem + letter + ".htm")
-        full_dict.update(letter_dict)
-        time.sleep(0.5)
-    return full_dict
-
-
-def parse_dictionary_main_page(url):
-    """
-    The dictionary main page contains links to subpages with words.
-    Takes a url (ex. https://lifeprint.com/asl101/index/a.htm)
-    Returns a dictionary with the dictionary entry as the key,
-    and the link to the dictionary content page as the value
-    """
-    page = requests.get(url, verify=False)
-    soup = BeautifulSoup(page.content, "html.parser")
-    links_html = soup.find_all("a", href=True)
-    links_html = [link for link in links_html if len(link.parent) > 1]
-    master_dict = {}
-    for blob in links_html:
-        text = blob.text
-        link = blob.get("href")
-        link = re.sub("\.\.", "https://lifeprint.com/asl101/", link)
-        master_dict[text] = link
-    return master_dict
+def post_random_content(main_page, reddit_creds, content_type="random"):
+    if content_type == "random":
+        content_type = random.choice(["image", "youtube", "mp4"])
+    content_dict = {}
+    i = 0
+    while True:
+        name = random.choice([*main_page.keys()])
+        url = main_page[name]
+        content_dict = parse_dictionary_content_page(url, name)
+        i += 1
+        if i > 100 or len(content_dict) > 0:
+            break
+    chosen_content = content_dict[random.choice([*content_dict.keys()])]
+    if content_type == "image":
+        pass
+    elif content_type == "youtube":
+        post_youtube(chosen_content, reddit_creds)
+    elif content_type == "mp4":
+        pass
+    return chosen_content
 
 
 def parse_dictionary_content_page(url, name):
@@ -93,28 +87,6 @@ def smart_truncate(content, length=300, suffix="..."):
         return " ".join(content[: length + 1].split(" ")[0:-1]) + suffix
 
 
-def post_random_content(main_page, reddit_creds, content_type="random"):
-    if content_type == "random":
-        content_type = random.choice(["image", "youtube", "mp4"])
-    content_dict = {}
-    i = 0
-    while True:
-        name = random.choice([*main_page.keys()])
-        url = main_page[name]
-        content_dict = parse_dictionary_content_page(url, name)
-        i += 1
-        if i > 100 or len(content_dict) > 0:
-            break
-    chosen_content = content_dict[random.choice([*content_dict.keys()])]
-    if content_type == "image":
-        pass
-    elif content_type == "youtube":
-        post_youtube(chosen_content, reddit_creds)
-    elif content_type == "mp4":
-        pass
-    return chosen_content
-
-
 def post_youtube(df_row, reddit_creds):
     title = df_row["name"] + " | " + df_row["text"]
     url = df_row["location"]
@@ -130,7 +102,7 @@ def post_youtube(df_row, reddit_creds):
     )
     reddit.validate_on_submit = True
     reddit.subreddit("learnASL").submit(title=title, url=url)
-    print("YouTube embedded video posted to Reddit")
+    logger.info("YouTube embedded video posted to Reddit")
 
 
 def load_creds_aws():
@@ -147,4 +119,20 @@ def load_creds_aws():
     creds["PASSWORD"] = ssm.StringParameter.value_for_string_parameter(
         self, "reddit_asl_password"
     )
+    return creds
+
+
+def load_creds_pickle():
+    print("Current running directory for load_creds_pickle is ({})".format(__name__))
+    with open("creds", "rb") as f:
+        creds = pickle.load(f)
+    return creds
+
+
+def load_creds_env():
+    creds = {}
+    creds["CLIENT_ID"] = os.environ["CLIENT_ID"]
+    creds["CLIENT_SECRET"] = os.environ["CLIENT_SECRET"]
+    creds["USERNAME"] = os.environ["USERNAME"]
+    creds["PASSWORD"] = os.environ["PASSWORD"]
     return creds

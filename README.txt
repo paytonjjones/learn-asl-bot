@@ -1,3 +1,48 @@
+Pytest:
+
+Simply run:
+```
+$ pytest
+```
+
+Serverless:
+
+### Deployment
+
+In order to deploy the example, you need to run the following command:
+
+```
+$ export NODE_TLS_REJECT_UNAUTHORIZED=0
+$ serverless deploy
+```
+
+### Invocation
+
+After successful deployment, you can invoke the deployed function by using the following command:
+
+```bash
+serverless invoke --function lambda_post
+```
+
+### Local development
+
+You can invoke your function locally by using the following command:
+
+```bash
+serverless invoke local --function lambda_post
+```
+
+### Bundling dependencies
+
+In case you would like to include third-party dependencies, you will need to use a plugin called `serverless-python-requirements`. You can set it up by running the following command:
+
+```bash
+serverless plugin install -n serverless-python-requirements
+```
+
+
+
+
 To activate virtual environment:
 source lambda-post-venv/bin/activate
 
