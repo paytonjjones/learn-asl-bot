@@ -6,7 +6,7 @@ import re
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 def parse_entire_dictionary():

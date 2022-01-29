@@ -15,7 +15,7 @@ from src.lambda_post.utils import post_random_content, load_creds_env
 # from utils import load_creds_aws
 
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 def lambda_post(event, context):

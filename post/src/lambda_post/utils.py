@@ -9,7 +9,7 @@ import pickle
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # import aws_cdk.aws_ssm as ssm
 
