@@ -87,9 +87,9 @@ def smart_truncate(content, length=300, suffix="..."):
         return " ".join(content[: length + 1].split(" ")[0:-1]) + suffix
 
 
-def post_youtube(df_row, reddit_creds):
-    title = df_row["name"] + " | " + df_row["text"]
-    url = df_row["location"]
+def post_youtube(content_dict, reddit_creds):
+    title = content_dict["name"] + " | " + content_dict["text"]
+    url = content_dict["location"]
     session = requests.Session()
     session.verify = False  # Disable SSL warnings
     reddit = praw.Reddit(
@@ -103,30 +103,6 @@ def post_youtube(df_row, reddit_creds):
     reddit.validate_on_submit = True
     reddit.subreddit("learnASL").submit(title=title, url=url)
     logger.info("YouTube embedded video posted to Reddit")
-
-
-def load_creds_aws():
-    creds = {}
-    creds["CLIENT_ID"] = ssm.StringParameter.value_for_string_parameter(
-        self, "reddit_client_id"
-    )
-    creds["CLIENT_SECRET"] = ssm.StringParameter.value_for_string_parameter(
-        self, "reddit_client_secret"
-    )
-    creds["USERNAME"] = ssm.StringParameter.value_for_string_parameter(
-        self, "reddit_asl_username"
-    )
-    creds["PASSWORD"] = ssm.StringParameter.value_for_string_parameter(
-        self, "reddit_asl_password"
-    )
-    return creds
-
-
-def load_creds_pickle():
-    print("Current running directory for load_creds_pickle is ({})".format(__name__))
-    with open("creds", "rb") as f:
-        creds = pickle.load(f)
-    return creds
 
 
 def load_creds_env():
