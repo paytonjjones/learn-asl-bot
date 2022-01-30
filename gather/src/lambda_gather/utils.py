@@ -1,20 +1,31 @@
-from datetime import datetime
 import logging
+import os
 import time
+import dotenv
 import requests
 import re
-import boto3
 from boto3.dynamodb.conditions import Key
 
 from bs4 import BeautifulSoup
 
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-letters = "abcdefghijklmnopqrstuvwxyz"
+dotenv.load_dotenv()
 
 
-def get_lifeprint_dictionary_links(sleepTime=0.05, letters=letters):
+def verify():
+    verify_str = os.environ["VERIFY"]
+    if verify_str == "True":
+        return True
+    else:
+        return False
+
+
+def get_lifeprint_dictionary_links(
+    sleepTime=0.05, letters="abcdefghijklmnopqrstuvwxyz"
+):
     stem = "https://lifeprint.com/asl101/index/"
     full_dict = {}
     for letter in letters:
@@ -31,7 +42,7 @@ def parse_lifeprint_dictionary_main_page(url):
     Returns a dictionary with the dictionary entry as the key,
     and the link to the dictionary content page as the value
     """
-    page = requests.get(url, verify=False)
+    page = requests.get(url, verify=verify())
     soup = BeautifulSoup(page.content, "html.parser")
     links_html = soup.find_all("a", href=True)
     links_html = [link for link in links_html if len(link.parent) > 1]
@@ -50,7 +61,7 @@ def get_youtube_links_from_dictionary_content_page(url, dictionary_word):
     Takes a url (ex. https://lifeprint.com/asl101//pages-signs/a/active.htm)
     Returns a dictionary with the url as key
     """
-    page = requests.get(url, verify=False)
+    page = requests.get(url, verify=verify())
     soup = BeautifulSoup(page.content, "html.parser")
     videos = soup.find_all("iframe")
     video_dict = {}
@@ -65,7 +76,9 @@ def get_youtube_links_from_dictionary_content_page(url, dictionary_word):
     return video_dict
 
 
-def lifeprint_dictionary_to_dynamodb(video_dict, table_name, dynamodb_client=None):
+def lifeprint_dictionary_to_dynamodb(
+    video_dict, table_name="asl_resource_dict", dynamodb_client=None
+):
     for url, item_info in video_dict.items():
         description = item_info.get("description")
         contentSource = item_info.get("contentSource")
@@ -132,3 +145,12 @@ def query_dynamodb_by_key(key, dynamodb_resource, table_name):
     table = dynamodb_resource.Table(table_name)
     response = table.query(KeyConditionExpression=Key("url").eq(key))
     return response["Items"]
+
+
+def load_creds_env_gather():
+    creds = {}
+    creds["AWS_REGION"] = os.environ["AWS_REGION"]
+    creds["AWS_ACCESS_KEY_ID"] = os.environ["AWS_ACCESS_KEY_ID"]
+    creds["AWS_SECRET_ACCESS_KEY"] = os.environ["AWS_SECRET_ACCESS_KEY"]
+    return creds
+

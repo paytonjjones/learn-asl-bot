@@ -21,7 +21,7 @@ $ serverless deploy
 After successful deployment, you can invoke the deployed function by using the following command:
 
 ```bash
-serverless invoke --function lambda_post
+serverless invoke --function post
 ```
 
 ### Local development
@@ -29,7 +29,7 @@ serverless invoke --function lambda_post
 You can invoke your function locally by using the following command:
 
 ```bash
-serverless invoke local --function lambda_post
+serverless invoke local --function post
 ```
 
 ### Bundling dependencies

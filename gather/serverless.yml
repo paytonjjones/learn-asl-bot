@@ -57,7 +57,7 @@ provider:
 #    - include-me-dir/**
 
 functions:
-  post:
+  gather:
     handler: src.handler.lambda_gather
 
 custom:
