@@ -1,8 +1,8 @@
 ### Pytest:
 
-Simply run:
 ```
-$ pytest
+$ pytest -m unit
+$ pytest -m integration
 ```
 
 ##### Serverless:
