@@ -3,6 +3,9 @@ import pytest
 import logging
 import boto3
 import os
+import requests
+from bs4 import BeautifulSoup
+
 
 dotenv.load_dotenv()
 logger = logging.getLogger()
@@ -10,7 +13,9 @@ logger.setLevel(logging.INFO)
 
 
 from gather.src.lambda_gather.utils import (
+    clean_description,
     clean_dictionary_word,
+    get_dictionary_description,
     get_lifeprint_dictionary_links,
     get_youtube_links_from_dictionary_content_page,
     lifeprint_dictionary_to_dynamodb,
@@ -86,6 +91,26 @@ def test_lifeprint_dictionary_to_dynamodb():
     assert actual["contentType"] == test_video_dict[contentUrl]["contentType"]
     assert actual["contentSource"] == test_video_dict[contentUrl]["contentSource"]
     assert actual["url"] == contentUrl
+
+
+@pytest.mark.integration
+def test_get_dictionary_description():
+    test_url = "https://lifeprint.com/asl101//pages-signs/a/active.htm"
+    page = requests.get(test_url, verify=False)
+    soup = BeautifulSoup(page.content, "html.parser")
+    videos = soup.find_all("iframe")
+    test_video = videos[0]
+    actual = get_dictionary_description(test_video, "ACTIVE")
+    expectedText = 'ACTIVE | "DO" / DOING / "I was doing..."'
+    assert expectedText in actual
+    assert len(expectedText) <= 300
+
+
+@pytest.mark.unit
+def test_clean_description():
+    test_text = '\n\tACTIVE | "DO" / DOING / "I was doing..."'
+    actual = clean_description(test_text)
+    assert actual == 'ACTIVE | "DO" / DOING / "I was doing..."'
 
 
 @pytest.mark.unit

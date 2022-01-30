@@ -57,9 +57,7 @@ def get_youtube_links_from_dictionary_content_page(url, dictionary_word):
     for video in videos:
         url = video["src"]
         value_dict = {}
-        full_description = get_description(video)
-        description = dictionary_word + " | " + full_description
-        value_dict["description"] = clean_reddit_title(description)
+        value_dict["description"] = get_dictionary_description(video, dictionary_word)
         value_dict["contentSource"] = "lifeprint-dictionary"
         value_dict["contentCreator"] = "Bill Vicars"
         value_dict["contentType"] = "youtube"
@@ -69,7 +67,6 @@ def get_youtube_links_from_dictionary_content_page(url, dictionary_word):
 
 def lifeprint_dictionary_to_dynamodb(video_dict, table_name, dynamodb_client=None):
     for url, item_info in video_dict.items():
-        logger.info(item_info)
         description = item_info.get("description")
         contentSource = item_info.get("contentSource")
         contentCreator = item_info.get("contentCreator")
@@ -93,9 +90,9 @@ def lifeprint_dictionary_to_dynamodb(video_dict, table_name, dynamodb_client=Non
             logger.info(item_info)
 
 
-def get_description(element):
+def get_dictionary_description(bs4_element, dictionary_word):
     text_array = []
-    temp = element
+    temp = bs4_element
     while True:
         temp = temp.previous
         if temp.name == "hr" or temp.name == "font":
@@ -104,18 +101,13 @@ def get_description(element):
             text_array.append(temp)
     # reverse text_array, then
     text_array.reverse()
-    description = "".join(text_array)
-    # Clean for Reddit Title
+    raw_description = "".join(text_array)
+    full_description = dictionary_word + " | " + raw_description
+    description = clean_description(full_description)
     return description
 
 
-def query_dynamodb_by_key(key, dynamodb_resource, table_name):
-    table = dynamodb_resource.Table(table_name)
-    response = table.query(KeyConditionExpression=Key("url").eq(key))
-    return response["Items"]
-
-
-def clean_reddit_title(title):
+def clean_description(title):
     title = re.sub("(\n|\t)+", "", title)
     title = smart_truncate(title)
     return title
@@ -134,3 +126,9 @@ def clean_dictionary_word(word):
     word = word.replace(" ", "")
     word = word.replace('"', "")
     return word
+
+
+def query_dynamodb_by_key(key, dynamodb_resource, table_name):
+    table = dynamodb_resource.Table(table_name)
+    response = table.query(KeyConditionExpression=Key("url").eq(key))
+    return response["Items"]
