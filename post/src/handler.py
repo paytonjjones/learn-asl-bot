@@ -12,8 +12,6 @@ from botocore.client import Config
 
 from src.lambda_post.utils import post_random_content, load_creds_env
 
-# from utils import load_creds_aws
-
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -24,11 +22,6 @@ def lambda_post(event, context):
     entire_dict = pickle.loads(
         s3.Bucket("lifeprintdict").Object("cached_dict").get()["Body"].read()
     )
-    # try:
-    #     creds = load_creds_aws()
-    # except Exception as e:
-    #     creds = pickle.load(open("../creds", "rb"))
-    #     logger.warn(f"creds could not be loaded from AWS: {e}")
     creds = load_creds_env()
 
     # Post

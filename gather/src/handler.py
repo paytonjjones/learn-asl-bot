@@ -25,10 +25,8 @@ def lambda_gather(event, context):
     dynamodb_client = boto3.client(
         "dynamodb", region_name=creds["AWS_REGION"], verify=verify()
     )
-
-    # Gather
     try:
-        all_dictionary_pages = get_lifeprint_dictionary_links(0.05)
+        all_dictionary_pages = get_lifeprint_dictionary_links(0.01)
         for dictionary_word, url in all_dictionary_pages.items():
             new_entries = get_youtube_links_from_dictionary_content_page(
                 url, dictionary_word

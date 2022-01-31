@@ -24,14 +24,14 @@ def verify():
 
 
 def get_lifeprint_dictionary_links(
-    sleepTime=0.05, letters="abcdefghijklmnopqrstuvwxyz"
+    sleep_time=0.01, letters="abcdefghijklmnopqrstuvwxyz"
 ):
     stem = "https://lifeprint.com/asl101/index/"
     full_dict = {}
     for letter in letters:
         letter_dict = parse_lifeprint_dictionary_main_page(stem + letter + ".htm")
         full_dict.update(letter_dict)
-        time.sleep(sleepTime)
+        time.sleep(sleep_time)
     return full_dict
 
 
@@ -55,12 +55,15 @@ def parse_lifeprint_dictionary_main_page(url):
     return master_dict
 
 
-def get_youtube_links_from_dictionary_content_page(url, dictionary_word):
+def get_youtube_links_from_dictionary_content_page(
+    url, dictionary_word, sleep_time=0.01
+):
     """
     The content page contains images and videos describing the word
     Takes a url (ex. https://lifeprint.com/asl101//pages-signs/a/active.htm)
     Returns a dictionary with the url as key
     """
+    time.sleep(sleep_time)
     page = requests.get(url, verify=verify())
     soup = BeautifulSoup(page.content, "html.parser")
     videos = soup.find_all("iframe")
