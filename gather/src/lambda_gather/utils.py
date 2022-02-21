@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import time
@@ -26,12 +27,15 @@ def verify():
 def get_lifeprint_dictionary_links(
     sleep_time=0.01, letters="abcdefghijklmnopqrstuvwxyz"
 ):
-    stem = "https://lifeprint.com/asl101/index/"
-    full_dict = {}
-    for letter in letters:
-        letter_dict = parse_lifeprint_dictionary_main_page(stem + letter + ".htm")
-        full_dict.update(letter_dict)
-        time.sleep(sleep_time)
+    try:
+        stem = "https://lifeprint.com/asl101/index/"
+        full_dict = {}
+        for letter in letters:
+            letter_dict = parse_lifeprint_dictionary_main_page(stem + letter + ".htm")
+            full_dict.update(letter_dict)
+            time.sleep(sleep_time)
+    except Exception as e:
+        logger.info("Error in getting dictionary links:" + str(e))
     return full_dict
 
 
@@ -55,8 +59,8 @@ def parse_lifeprint_dictionary_main_page(url):
     return master_dict
 
 
-def get_youtube_links_from_dictionary_content_page(
-    url, dictionary_word, sleep_time=0.01
+def get_new_youtube_links_from_dictionary_content_page(
+    url, dictionary_word, existing_urls, sleep_time=0.01
 ):
     """
     The content page contains images and videos describing the word
@@ -70,12 +74,15 @@ def get_youtube_links_from_dictionary_content_page(
     video_dict = {}
     for video in videos:
         url = video["src"]
-        value_dict = {}
-        value_dict["description"] = get_dictionary_description(video, dictionary_word)
-        value_dict["contentSource"] = "lifeprint-dictionary"
-        value_dict["contentCreator"] = "Bill Vicars"
-        value_dict["contentType"] = "youtube"
-        video_dict[url] = value_dict
+        if url not in existing_urls:
+            value_dict = {}
+            value_dict["description"] = get_dictionary_description(
+                video, dictionary_word
+            )
+            value_dict["contentSource"] = "lifeprint-dictionary"
+            value_dict["contentCreator"] = "Bill Vicars"
+            value_dict["contentType"] = "youtube"
+            video_dict[url] = value_dict
     return video_dict
 
 
@@ -148,6 +155,12 @@ def query_dynamodb_by_key(key, dynamodb_resource, table_name):
     table = dynamodb_resource.Table(table_name)
     response = table.query(KeyConditionExpression=Key("url").eq(key))
     return response["Items"]
+
+
+def dynamodb_scan(dynamodb_resource, table_name):
+    table = dynamodb_resource.Table(table_name)
+    scan = table.scan()
+    return scan["Items"]
 
 
 def load_creds_env_gather():

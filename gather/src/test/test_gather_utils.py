@@ -17,7 +17,7 @@ from gather.src.lambda_gather.utils import (
     clean_dictionary_word,
     get_dictionary_description,
     get_lifeprint_dictionary_links,
-    get_youtube_links_from_dictionary_content_page,
+    get_new_youtube_links_from_dictionary_content_page,
     lifeprint_dictionary_to_dynamodb,
     parse_lifeprint_dictionary_main_page,
     query_dynamodb_by_key,
@@ -48,9 +48,9 @@ def test_parse_lifeprint_dictionary_main_page():
 
 
 @pytest.mark.integration
-def test_get_youtube_links_from_dictionary_content_page():
+def test_get_new_youtube_links_from_dictionary_content_page():
     test_url = "https://lifeprint.com/asl101//pages-signs/a/active.htm"
-    actual = get_youtube_links_from_dictionary_content_page(test_url, "ACTIVE")
+    actual = get_new_youtube_links_from_dictionary_content_page(test_url, "ACTIVE", [])
     assert len(actual) > 0
     expectedText = 'ACTIVE | "DO" / DOING / "I was doing..."'
     expectedVideoLink = "https://www.youtube.com/embed/8ZBfz7-5w54?rel=0&autoplay=1"
