@@ -1,10 +1,17 @@
 from unittest.mock import Mock, patch
 import dotenv
 import pytest
+import boto3
 
 dotenv.load_dotenv()
 
-from post.src.lambda_post.utils import load_creds_env, post_youtube, smart_truncate
+from post.src.lambda_post.utils import (
+    load_creds_env,
+    post_from_dynamodb,
+    post_youtube,
+    smart_truncate,
+    verify,
+)
 
 
 @pytest.mark.unit
@@ -24,9 +31,8 @@ def test_smart_truncate():
 @patch("post.src.lambda_post.utils.requests")
 def test_post_youtube(requests, praw, load_creds_env):
     content_dict = {
-        "name": "WORD",
-        "text": "A description",
-        "location": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        "description": "WORD | A description",
+        "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     }
     reddit_creds = {
         "CLIENT_ID": "CLIENT_ID",
@@ -55,4 +61,22 @@ def test_load_creds_env():
     assert isinstance(creds["USERNAME"], str)
     assert isinstance(creds["CLIENT_SECRET"], str)
     assert isinstance(creds["PASSWORD"], str)
+    assert isinstance(creds["AWS_REGION"], str)
+    assert isinstance(creds["DYNAMODB_TABLE_NAME"], str)
+
+
+@pytest.mark.integration
+@patch("post.src.lambda_post.utils.post_youtube")
+def test_post_from_dynamo_db(post_youtube):
+    creds = load_creds_env()
+    dynamodb_table_name = creds["DYNAMODB_TABLE_NAME"]
+    dynamodb_resource = boto3.resource(
+        "dynamodb", region_name=creds["AWS_REGION"], verify=verify()
+    )
+    dynamodb_client = Mock()
+
+    post_from_dynamodb(creds, dynamodb_resource, dynamodb_client, dynamodb_table_name)
+    assert isinstance(post_youtube.call_args[0][0]["url"], str)
+    assert isinstance(post_youtube.call_args[0][0]["description"], str)
+    dynamodb_client.update_item.assert_called_once()
 

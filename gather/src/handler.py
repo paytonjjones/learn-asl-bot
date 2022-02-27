@@ -5,17 +5,29 @@ except ImportError:
 
 import json
 import logging
+from random import sample
 import boto3
+from pandas import read_csv
 
-from gather.src.lambda_gather.utils import (
-    get_lifeprint_dictionary_links,
-    get_new_youtube_links_from_dictionary_content_page,
-    lifeprint_dictionary_to_dynamodb,
-    load_creds_env_gather,
-    verify,
-    dynamodb_scan,
-)
-
+# serverless requires first import style, pytest requires second
+try:
+    from src.lambda_gather.utils import (
+        get_lifeprint_dictionary_links,
+        get_new_youtube_links_from_dictionary_content_page,
+        lifeprint_dictionary_to_dynamodb,
+        load_creds_env_gather,
+        verify,
+        dynamodb_scan,
+    )
+except:
+    from gather.src.lambda_gather.utils import (
+        get_lifeprint_dictionary_links,
+        get_new_youtube_links_from_dictionary_content_page,
+        lifeprint_dictionary_to_dynamodb,
+        load_creds_env_gather,
+        verify,
+        dynamodb_scan,
+    )
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -30,7 +42,12 @@ def lambda_gather(event, context):
     dynamodb_resource = boto3.resource(
         "dynamodb", region_name=creds["AWS_REGION"], verify=verify()
     )
-    all_dictionary_pages = get_lifeprint_dictionary_links(0.01)
+
+    # Lifeprint
+    letters = sample("abcdefghijklmnopqrstuvwxyz", 5)
+    all_dictionary_pages = get_lifeprint_dictionary_links(
+        sleep_time=0.01, letters=letters
+    )
     saved_entries = dynamodb_scan(dynamodb_resource, dynamodb_table_name)
     existing_urls = [entry["url"] for entry in saved_entries]
 
@@ -47,6 +64,10 @@ def lambda_gather(event, context):
             logger.info(
                 "Error in getting YouTube links for" + dictionary_word + ": " + str(e)
             )
+
+    # Locally saved entries
+    # gallaudet = read_csv("gather/resources/gallaudet-resource-videos.csv")
+
     return {
         "statusCode": 200,
         "body": json.dumps("ASL content dictionary successfully updated"),

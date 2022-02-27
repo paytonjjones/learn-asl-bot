@@ -1,12 +1,15 @@
 import logging
 import os
+import time
 import requests
 import re
 import random
 import praw
-import pickle
-
+import dotenv
+from boto3.dynamodb.conditions import Key
 from bs4 import BeautifulSoup
+
+dotenv.load_dotenv()
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -14,26 +17,32 @@ logger.setLevel(logging.INFO)
 # import aws_cdk.aws_ssm as ssm
 
 
-def post_random_content(main_page, reddit_creds, content_type="random"):
-    if content_type == "random":
-        content_type = random.choice(["image", "youtube", "mp4"])
-    content_dict = {}
-    i = 0
-    while True:
-        name = random.choice([*main_page.keys()])
-        url = main_page[name]
-        content_dict = parse_dictionary_content_page(url, name)
-        i += 1
-        if i > 100 or len(content_dict) > 0:
-            break
-    chosen_content = content_dict[random.choice([*content_dict.keys()])]
-    if content_type == "image":
-        pass
-    elif content_type == "youtube":
-        post_youtube(chosen_content, reddit_creds)
-    elif content_type == "mp4":
-        pass
-    return chosen_content
+def post_from_dynamodb(reddit_creds, dynamodb_resource, dynamodb_client, table_name):
+    all_entries = dynamodb_scan(dynamodb_resource, table_name)
+    times_posted = [
+        dict.get("timesPosted")
+        for dict in all_entries
+        if dict.get("timesPosted") is not None
+    ]
+    least_posted_entries = [
+        entry for entry in all_entries if entry.get("timesPosted") == min(times_posted)
+    ]
+    chosen_content = random.choice(least_posted_entries)
+    post_youtube(chosen_content, reddit_creds)
+    try:
+        dynamodb_client.update_item(
+            TableName=table_name,
+            Key={"url": {"S": chosen_content["url"]}},
+            UpdateExpression="set timesPosted=:t, timestampLastPosted=:s",
+            ExpressionAttributeValues={
+                ":t": {"N": chosen_content.get("timesPosted") + 1},
+                ":s": {"N": time.time()},
+            },
+            ReturnValues="UPDATED_NEW",
+        )
+    except Exception as e:
+        logger.info(e)
+        logger.info(chosen_content["url"])
 
 
 def parse_dictionary_content_page(url, name):
@@ -88,8 +97,8 @@ def smart_truncate(content, length=300, suffix="..."):
 
 
 def post_youtube(content_dict, reddit_creds):
-    title = content_dict["name"] + " | " + content_dict["text"]
-    url = content_dict["location"]
+    title = content_dict["description"]
+    url = content_dict["url"]
     session = requests.Session()
     session.verify = False  # Disable SSL warnings
     reddit = praw.Reddit(
@@ -111,4 +120,22 @@ def load_creds_env():
     creds["CLIENT_SECRET"] = os.environ["CLIENT_SECRET"]
     creds["USERNAME"] = os.environ["USERNAME"]
     creds["PASSWORD"] = os.environ["PASSWORD"]
+    creds["AWS_REGION"] = os.environ["AWS_REGION"]
+    creds["DYNAMODB_TABLE_NAME"] = os.environ["DYNAMODB_TABLE_NAME"]
     return creds
+
+
+# TODO:
+##  COMMON FUNCTIONS
+def dynamodb_scan(dynamodb_resource, table_name):
+    table = dynamodb_resource.Table(table_name)
+    scan = table.scan()
+    return scan["Items"]
+
+
+def verify():
+    verify_str = os.environ["VERIFY"]
+    if verify_str == "True":
+        return True
+    else:
+        return False

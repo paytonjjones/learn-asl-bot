@@ -10,23 +10,25 @@ import boto3
 from botocore import UNSIGNED
 from botocore.client import Config
 
-from src.lambda_post.utils import post_random_content, load_creds_env
+from src.lambda_post.utils import post_from_dynamodb, load_creds_env, verify
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
 def lambda_post(event, context):
-    # Load from S3 bucket
-    s3 = boto3.resource("s3", config=Config(signature_version=UNSIGNED))
-    entire_dict = pickle.loads(
-        s3.Bucket("lifeprintdict").Object("cached_dict").get()["Body"].read()
-    )
     creds = load_creds_env()
 
-    # Post
     try:
-        post_random_content(entire_dict, creds, content_type="youtube")
+        dynamodb_client = boto3.client(
+            "dynamodb", region_name=creds["AWS_REGION"], verify=verify()
+        )
+        dynamodb_resource = boto3.resource(
+            "dynamodb", region_name=creds["AWS_REGION"], verify=verify()
+        )
+        post_from_dynamodb(
+            creds, dynamodb_resource, dynamodb_client, creds["DYNAMODB_TABLE_NAME"]
+        )
     except Exception as e:
         return {"statusCode": 400, "body": json.dumps("Error:" + str(e))}
     return {

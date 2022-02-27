@@ -98,12 +98,13 @@ def lifeprint_dictionary_to_dynamodb(
             dynamodb_client.update_item(
                 TableName=table_name,
                 Key={"url": {"S": url}},
-                UpdateExpression="set description=:d, contentSource=:s, contentCreator=:c, contentType=:t",
+                UpdateExpression="set description=:d, contentSource=:s, contentCreator=:c, contentType=:t, timesPosted=:p",
                 ExpressionAttributeValues={
                     ":d": {"S": description},
                     ":s": {"S": contentSource},
                     ":c": {"S": contentCreator},
                     ":t": {"S": contentType},
+                    ":p": {"N": 0},
                 },
                 ReturnValues="UPDATED_NEW",
             )
