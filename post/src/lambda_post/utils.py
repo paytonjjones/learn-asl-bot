@@ -37,7 +37,7 @@ def post_from_dynamodb(reddit_creds, dynamodb_resource, dynamodb_client, table_n
             UpdateExpression="set timesPosted=:t, timestampLastPosted=:s",
             ExpressionAttributeValues={
                 ":t": {"N": updated_times_posted},
-                ":s": {"N": time.time()},
+                ":s": {"N": str(int(time.time()))},
             },
             ReturnValues="UPDATED_NEW",
         )
