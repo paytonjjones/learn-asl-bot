@@ -104,7 +104,7 @@ def lifeprint_dictionary_to_dynamodb(
                     ":s": {"S": contentSource},
                     ":c": {"S": contentCreator},
                     ":t": {"S": contentType},
-                    ":p": {"N": 0},
+                    ":p": {"N": "0"},
                 },
                 ReturnValues="UPDATED_NEW",
             )

@@ -44,7 +44,7 @@ def lambda_gather(event, context):
     )
 
     # Lifeprint
-    letters = sample("abcdefghijklmnopqrstuvwxyz", 5)
+    letters = sample("abcdefghijklmnopqrstuvwxyz", 3)
     all_dictionary_pages = get_lifeprint_dictionary_links(
         sleep_time=0.01, letters=letters
     )

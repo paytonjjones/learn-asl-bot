@@ -29,13 +29,14 @@ def post_from_dynamodb(reddit_creds, dynamodb_resource, dynamodb_client, table_n
     ]
     chosen_content = random.choice(least_posted_entries)
     post_youtube(chosen_content, reddit_creds)
+    updated_times_posted = str(chosen_content.get("timesPosted") + 1)
     try:
         dynamodb_client.update_item(
             TableName=table_name,
             Key={"url": {"S": chosen_content["url"]}},
             UpdateExpression="set timesPosted=:t, timestampLastPosted=:s",
             ExpressionAttributeValues={
-                ":t": {"N": chosen_content.get("timesPosted") + 1},
+                ":t": {"N": updated_times_posted},
                 ":s": {"N": time.time()},
             },
             ReturnValues="UPDATED_NEW",
