@@ -153,7 +153,7 @@ def test_get_dictionary_description():
 
 @pytest.mark.unit
 def test_clean_description():
-    test_text = '\n\tACTIVE | "DO" / DOING / "I was doing..."'
+    test_text = '     \n\tACTIVE    | "DO" / DOING / "I was doing..."'
     actual = clean_description(test_text)
     assert actual == 'ACTIVE | "DO" / DOING / "I was doing..."'
 

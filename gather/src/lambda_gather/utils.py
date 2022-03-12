@@ -160,7 +160,9 @@ def get_dictionary_description(bs4_element, dictionary_word):
 
 
 def clean_description(title):
-    title = re.sub("(\n|\t)+", "", title)
+    title = re.sub("(\n|\t|\r)+", "", title)
+    title = re.sub("\s\s+", " ", title)
+    title = title.strip()
     title = smart_truncate(title)
     return title
 
