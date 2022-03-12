@@ -50,12 +50,6 @@ def parse_dictionary_content_page(url, name):
     """
     The content page contains images and videos describing the word
     Takes a url (ex. https://lifeprint.com/asl101//pages-signs/a/active.htm)
-    Returns a pandas dataframe as follows:
-    # pandas df:
-    # name
-    # type ("image", "gif", or "video")
-    # text
-    # location (the web address where the content can be found)
     """
     page = requests.get(url, verify=False)
     soup = BeautifulSoup(page.content, "html.parser")

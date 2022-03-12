@@ -7,7 +7,6 @@ import json
 import logging
 from random import sample
 import boto3
-from pandas import read_csv
 
 # serverless requires first import style, pytest requires second
 try:
@@ -64,9 +63,6 @@ def lambda_gather(event, context):
             logger.info(
                 "Error in getting YouTube links for" + dictionary_word + ": " + str(e)
             )
-
-    # Locally saved entries
-    # gallaudet = read_csv("gather/resources/gallaudet-resource-videos.csv")
 
     return {
         "statusCode": 200,

@@ -5,10 +5,7 @@ except ImportError:
 
 import logging
 import json
-import pickle
 import boto3
-from botocore import UNSIGNED
-from botocore.client import Config
 
 from src.lambda_post.utils import post_from_dynamodb, load_creds_env, verify
 
