@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import time
@@ -84,6 +83,70 @@ def get_new_youtube_links_from_dictionary_content_page(
             value_dict["contentType"] = "youtube"
             video_dict[url] = value_dict
     return video_dict
+
+
+def get_links_from_vocab_page(url, description):
+    link = re.sub("\.\.", "https://lifeprint.com/asl101/", url)
+    page = requests.get(link, verify=verify())
+    soup = BeautifulSoup(page.content, "html.parser")
+    videos = soup.find_all("iframe")
+    link_array = []
+    for video in videos:
+        link_array.append((description, video["src"]))
+    return link_array
+
+
+def get_lesson_page_videos(lesson_number: str, existing_urls):
+    url = f"https://www.lifeprint.com/asl101/lessons/lesson{lesson_number}.htm"
+    page = requests.get(url)
+    soup = BeautifulSoup(page.content, "html.parser")
+    soup_links = soup.find_all("a", attrs={"href": True})
+    array_of_link_tuples = []
+    for link in soup_links:
+        description = clean_description(str(link.contents[0] if link.contents else ""))
+        href = link["href"]
+        array_of_link_tuples.append((description, href))
+    valid_links = find_valid_links_recursively(array_of_link_tuples)
+    video_dict = {}
+    for link in valid_links:
+        url = link[1]
+        if url not in existing_urls:
+            value_dict = {}
+            value_dict["description"] = link[0]
+            value_dict["contentSource"] = "lifeprint-lesson-pages"
+            value_dict["contentCreator"] = "Bill Vicars"
+            value_dict["contentType"] = "youtube"
+            video_dict[url] = value_dict
+    return video_dict
+
+
+def validate_lesson_link(url, description):
+    if "youtube" not in url.lower():
+        return False
+    if "youtube.com/billvicars" in url.lower():
+        return False
+    if not " " in description.lower():
+        return False
+    if "playlist" in description.lower():
+        return False
+    if "quiz" in description.lower():
+        return False
+    return True
+
+
+def find_valid_links_recursively(links):
+    exit = True
+    for i, link in enumerate(links):
+        if "pages-signs" in link[1]:
+            links.extend(get_links_from_vocab_page(link[1], link[0]))
+            exit = False
+        if not validate_lesson_link(link[1], link[0]):
+            del links[i]
+            exit = False
+    if exit:
+        return links
+    links = find_valid_links_recursively(links)
+    return list(set(links))
 
 
 def lifeprint_dictionary_to_dynamodb(

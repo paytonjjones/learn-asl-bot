@@ -18,6 +18,7 @@ try:
         verify,
         dynamodb_scan,
         update_dynamodb_item,
+        get_lesson_page_videos,
     )
 
     EXTERNAL_RESOURCES_FILEPATH = "resources/external-resources.json"
@@ -30,6 +31,7 @@ except:
         verify,
         dynamodb_scan,
         update_dynamodb_item,
+        get_lesson_page_videos,
     )
 
     EXTERNAL_RESOURCES_FILEPATH = "gather/resources/external-resources.json"  # assuming tests run from the root of the project
@@ -54,6 +56,11 @@ def lambda_gather(event, context):
     all_dictionary_pages = get_lifeprint_dictionary_links(
         sleep_time=0.01, letters=letters
     )
+    lessons = sample(
+        ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10"]
+        + [str(num) for num in list(range(11, 60))],
+        5,
+    )
     saved_entries = dynamodb_scan(dynamodb_resource, dynamodb_table_name)
     existing_urls = [entry["url"] for entry in saved_entries]
 
@@ -69,6 +76,21 @@ def lambda_gather(event, context):
         except Exception as e:
             logger.info(
                 "Error in getting YouTube links for" + dictionary_word + ": " + str(e)
+            )
+
+    for lesson_number in lessons:
+        try:
+            new_entries = get_lesson_page_videos(lesson_number, existing_urls)
+            if new_entries:
+                lifeprint_dictionary_to_dynamodb(
+                    new_entries, dynamodb_table_name, dynamodb_client
+                )
+        except Exception as e:
+            logger.info(
+                "Error in getting lesson page videos for Lesson #"
+                + lesson_number
+                + ": "
+                + str(e)
             )
 
     external_resources = json.load(open(EXTERNAL_RESOURCES_FILEPATH))
