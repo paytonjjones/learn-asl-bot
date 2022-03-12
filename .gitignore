@@ -5,6 +5,7 @@ creds
 # Other
 *.zip
 TODO
+notebooks/
 
 # Serverless
 .serverless
