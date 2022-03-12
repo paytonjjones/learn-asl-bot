@@ -17,7 +17,10 @@ try:
         load_creds_env_gather,
         verify,
         dynamodb_scan,
+        update_dynamodb_item,
     )
+
+    EXTERNAL_RESOURCES_FILEPATH = "resources/external-resources.json"
 except:
     from gather.src.lambda_gather.utils import (
         get_lifeprint_dictionary_links,
@@ -26,7 +29,11 @@ except:
         load_creds_env_gather,
         verify,
         dynamodb_scan,
+        update_dynamodb_item,
     )
+
+    EXTERNAL_RESOURCES_FILEPATH = "gather/resources/external-resources.json"  # assuming tests run from the root of the project
+
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -62,6 +69,19 @@ def lambda_gather(event, context):
         except Exception as e:
             logger.info(
                 "Error in getting YouTube links for" + dictionary_word + ": " + str(e)
+            )
+
+    external_resources = json.load(open(EXTERNAL_RESOURCES_FILEPATH))
+    for entry in external_resources:
+        if entry["url"] not in existing_urls:
+            update_dynamodb_item(
+                url=entry["url"],
+                description=entry["description"],
+                contentSource=entry.get("contentSource", ""),
+                contentCreator=entry.get("contentCreator", ""),
+                contentType=entry.get("contentType", ""),
+                dynamodb_client=dynamodb_client,
+                table_name=dynamodb_table_name,
             )
 
     return {

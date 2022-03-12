@@ -5,7 +5,10 @@ import pytest
 import logging
 from gather.src.handler import lambda_gather
 
-dotenv.load_dotenv()
+try:
+    dotenv.load_dotenv()
+except:
+    pass
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -38,13 +41,16 @@ mock_content_entries = {
 @patch("gather.src.handler.get_new_youtube_links_from_dictionary_content_page")
 @patch("gather.src.handler.lifeprint_dictionary_to_dynamodb")
 @patch("gather.src.handler.boto3.client")
+@patch("gather.src.handler.update_dynamodb_item")
 def test_lambda_gather(
+    update_dynamodb_item_mock,
     boto3_client_mock,
     lifeprint_dictionary_to_dynamodb_mock,
     get_new_youtube_links_from_dictionary_content_page_mock,
     get_lifeprint_dictionary_links_mock,
     saved_entries_mock,
 ):
+    update_dynamodb_item_mock.return_value = None
     get_lifeprint_dictionary_links_mock.return_value = mock_dictionary_links
     get_new_youtube_links_from_dictionary_content_page_mock.return_value = (
         mock_content_entries
@@ -74,3 +80,5 @@ def test_lambda_gather(
     lifeprint_dictionary_to_dynamodb_mock.assert_has_calls(
         [mock.call(mock_content_entries, "asl_resource_dict", "mock_boto3_client")]
     )
+
+    update_dynamodb_item_mock.assert_called()

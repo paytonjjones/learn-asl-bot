@@ -15,6 +15,7 @@ logger.setLevel(logging.INFO)
 from gather.src.lambda_gather.utils import (
     clean_description,
     clean_dictionary_word,
+    delete_dynamodb_by_key,
     get_dictionary_description,
     get_lifeprint_dictionary_links,
     get_new_youtube_links_from_dictionary_content_page,
@@ -22,6 +23,7 @@ from gather.src.lambda_gather.utils import (
     parse_lifeprint_dictionary_main_page,
     query_dynamodb_by_key,
     smart_truncate,
+    update_dynamodb_item,
 )
 
 
@@ -64,7 +66,7 @@ def test_get_new_youtube_links_from_dictionary_content_page():
 
 @pytest.mark.integration
 def test_lifeprint_dictionary_to_dynamodb():
-    contentUrl = "https://www.youtube.com/embed/8ZBfz7-5w54?rel=0&autoplay=1"
+    contentUrl = "https://www.fakeurl.com"
     test_video_dict = {
         contentUrl: {
             "description": 'ACTIVE | "DO" / DOING / "I was doing..."If you are describing a situation or telling a story in which you want to indicate that general action was taking place, then here is a general version of "DO."\xa0 General activity can be shown with this sign.\xa0You hold your hands out in front of you and move...',
@@ -86,11 +88,54 @@ def test_lifeprint_dictionary_to_dynamodb():
     actual = query_dynamodb_by_key(contentUrl, dynamodb_resource, "asl_resource_dict",)[
         0
     ]
+    print("OK HERE DUMMY")
+    print(actual)
     assert actual["contentCreator"] == test_video_dict[contentUrl]["contentCreator"]
     assert actual["description"] == test_video_dict[contentUrl]["description"]
     assert actual["contentType"] == test_video_dict[contentUrl]["contentType"]
     assert actual["contentSource"] == test_video_dict[contentUrl]["contentSource"]
     assert actual["url"] == contentUrl
+
+    delete_dynamodb_by_key(contentUrl, dynamodb_resource, "asl_resource_dict")
+
+
+@pytest.mark.integration
+def test_update_dynamodb_item():
+    contentUrl = "https://test.url"
+    test_video_dict = {
+        "url": contentUrl,
+        "description": "A description",
+        "contentSource": "test-source",
+        "contentCreator": "Test Creator",
+        "contentType": "youtube",
+    }
+    dynamodb_client = boto3.client(
+        "dynamodb", region_name=os.environ["AWS_REGION"], verify=False
+    )
+    dynamodb_resource = boto3.resource(
+        "dynamodb", region_name=os.environ["AWS_REGION"], verify=False
+    )
+
+    update_dynamodb_item(
+        url=test_video_dict["url"],
+        description=test_video_dict["description"],
+        contentSource=test_video_dict.get("contentSource", ""),
+        contentCreator=test_video_dict.get("contentCreator", ""),
+        contentType=test_video_dict.get("contentType", ""),
+        dynamodb_client=dynamodb_client,
+        table_name="asl_resource_dict",
+    )
+
+    actual = query_dynamodb_by_key(contentUrl, dynamodb_resource, "asl_resource_dict",)[
+        0
+    ]
+    assert actual["url"] == test_video_dict["url"]
+    assert actual["contentCreator"] == test_video_dict["contentCreator"]
+    assert actual["description"] == test_video_dict["description"]
+    assert actual["contentType"] == test_video_dict["contentType"]
+    assert actual["contentSource"] == test_video_dict["contentSource"]
+
+    delete_dynamodb_by_key(contentUrl, dynamodb_resource, "asl_resource_dict")
 
 
 @pytest.mark.integration

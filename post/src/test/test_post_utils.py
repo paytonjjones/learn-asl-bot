@@ -3,7 +3,10 @@ import dotenv
 import pytest
 import boto3
 
-dotenv.load_dotenv()
+try:
+    dotenv.load_dotenv()
+except:
+    pass
 
 from post.src.lambda_post.utils import (
     load_creds_env,

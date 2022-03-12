@@ -94,24 +94,52 @@ def lifeprint_dictionary_to_dynamodb(
         contentSource = item_info.get("contentSource")
         contentCreator = item_info.get("contentCreator")
         contentType = item_info.get("contentType")
-        try:
-            dynamodb_client.update_item(
-                TableName=table_name,
-                Key={"url": {"S": url}},
-                UpdateExpression="set description=:d, contentSource=:s, contentCreator=:c, contentType=:t, timesPosted=:p",
-                ExpressionAttributeValues={
-                    ":d": {"S": description},
-                    ":s": {"S": contentSource},
-                    ":c": {"S": contentCreator},
-                    ":t": {"S": contentType},
-                    ":p": {"N": "0"},
-                },
-                ReturnValues="UPDATED_NEW",
-            )
-        except Exception as e:
-            logger.info(e)
-            logger.info(url)
-            logger.info(item_info)
+        update_dynamodb_item(
+            url=url,
+            description=description,
+            contentSource=contentSource,
+            contentCreator=contentCreator,
+            contentType=contentType,
+            dynamodb_client=dynamodb_client,
+            table_name=table_name,
+        )
+
+
+def update_dynamodb_item(
+    url,
+    description,
+    contentSource,
+    contentCreator,
+    contentType,
+    dynamodb_client,
+    table_name,
+):
+    try:
+        dynamodb_client.update_item(
+            TableName=table_name,
+            Key={"url": {"S": url}},
+            UpdateExpression="set description=:d, contentSource=:s, contentCreator=:c, contentType=:t, timesPosted=:p",
+            ExpressionAttributeValues={
+                ":d": {"S": description},
+                ":s": {"S": contentSource},
+                ":c": {"S": contentCreator},
+                ":t": {"S": contentType},
+                ":p": {"N": "0"},
+            },
+            ReturnValues="UPDATED_NEW",
+        )
+    except Exception as e:
+        logger.info(dynamodb_client)
+        logger.info("Error in updating DynamoDB item:" + str(e))
+        logger.info(
+            {
+                url: url,
+                description: description,
+                contentSource: contentSource,
+                contentCreator: contentCreator,
+                contentType: contentType,
+            }
+        )
 
 
 def get_dictionary_description(bs4_element, dictionary_word):
@@ -156,6 +184,12 @@ def query_dynamodb_by_key(key, dynamodb_resource, table_name):
     table = dynamodb_resource.Table(table_name)
     response = table.query(KeyConditionExpression=Key("url").eq(key))
     return response["Items"]
+
+
+def delete_dynamodb_by_key(key, dynamodb_resource, table_name):
+    table = dynamodb_resource.Table(table_name)
+    response = table.delete_item(Key={"url": key})
+    return response
 
 
 def dynamodb_scan(dynamodb_resource, table_name):
