@@ -14,6 +14,8 @@ logger.setLevel(logging.INFO)
 
 dotenv.load_dotenv()
 
+TIMEOUT_SECONDS = 5
+
 
 def verify():
     verify_str = os.environ["VERIFY"]
@@ -45,7 +47,7 @@ def parse_lifeprint_dictionary_main_page(url):
     Returns a dictionary with the dictionary entry as the key,
     and the link to the dictionary content page as the value
     """
-    page = requests.get(url, verify=verify())
+    page = requests.get(url, verify=verify(), timeout=TIMEOUT_SECONDS)
     soup = BeautifulSoup(page.content, "html.parser")
     links_html = soup.find_all("a", href=True)
     links_html = [link for link in links_html if len(link.parent) > 1]
@@ -67,7 +69,7 @@ def get_new_youtube_links_from_dictionary_content_page(
     Returns a dictionary with the url as key
     """
     time.sleep(sleep_time)
-    page = requests.get(url, verify=verify())
+    page = requests.get(url, verify=verify(), timeout=TIMEOUT_SECONDS)
     soup = BeautifulSoup(page.content, "html.parser")
     videos = soup.find_all("iframe")
     video_dict = {}
@@ -87,7 +89,7 @@ def get_new_youtube_links_from_dictionary_content_page(
 
 def get_links_from_vocab_page(url, description):
     link = re.sub("\.\.", "https://lifeprint.com/asl101/", url)
-    page = requests.get(link, verify=verify())
+    page = requests.get(link, verify=verify(), timeout=TIMEOUT_SECONDS)
     soup = BeautifulSoup(page.content, "html.parser")
     videos = soup.find_all("iframe")
     link_array = []
@@ -98,7 +100,7 @@ def get_links_from_vocab_page(url, description):
 
 def get_lesson_page_videos(lesson_number: str, existing_urls):
     url = f"https://www.lifeprint.com/asl101/lessons/lesson{lesson_number}.htm"
-    page = requests.get(url)
+    page = requests.get(url, verify=verify(), timeout=TIMEOUT_SECONDS)
     soup = BeautifulSoup(page.content, "html.parser")
     soup_links = soup.find_all("a", attrs={"href": True})
     array_of_link_tuples = []

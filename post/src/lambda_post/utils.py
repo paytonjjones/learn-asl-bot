@@ -14,7 +14,7 @@ dotenv.load_dotenv()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-# import aws_cdk.aws_ssm as ssm
+TIMEOUT_SECONDS = 5
 
 
 def post_from_dynamodb(reddit_creds, dynamodb_resource, dynamodb_client, table_name):
@@ -51,7 +51,7 @@ def parse_dictionary_content_page(url, name):
     The content page contains images and videos describing the word
     Takes a url (ex. https://lifeprint.com/asl101//pages-signs/a/active.htm)
     """
-    page = requests.get(url, verify=False)
+    page = requests.get(url, verify=verify(), timeout=TIMEOUT_SECONDS)
     soup = BeautifulSoup(page.content, "html.parser")
     videos = soup.find_all("iframe")
     video_dict = {}

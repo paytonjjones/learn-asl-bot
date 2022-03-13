@@ -141,7 +141,7 @@ def test_update_dynamodb_item():
 @pytest.mark.integration
 def test_get_dictionary_description():
     test_url = "https://lifeprint.com/asl101//pages-signs/a/active.htm"
-    page = requests.get(test_url, verify=False)
+    page = requests.get(test_url, verify=False, timeout=5)
     soup = BeautifulSoup(page.content, "html.parser")
     videos = soup.find_all("iframe")
     test_video = videos[0]
