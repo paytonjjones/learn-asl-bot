@@ -75,11 +75,11 @@ def get_new_youtube_links_from_dictionary_content_page(
     video_dict = {}
     for video in videos:
         url = video["src"]
-        if url not in existing_urls:
+        description = get_dictionary_description(video, dictionary_word)
+        is_valid_link = validate_link(url, description)
+        if is_valid_link and url not in existing_urls:
             value_dict = {}
-            value_dict["description"] = get_dictionary_description(
-                video, dictionary_word
-            )
+            value_dict["description"] = description
             value_dict["contentSource"] = "lifeprint-dictionary"
             value_dict["contentCreator"] = "Bill Vicars"
             value_dict["contentType"] = "youtube"
@@ -122,10 +122,12 @@ def get_lesson_page_videos(lesson_number: str, existing_urls):
     return video_dict
 
 
-def validate_lesson_link(url, description):
+def validate_link(url, description):
     if "youtube" not in url.lower():
         return False
     if "youtube.com/billvicars" in url.lower():
+        return False
+    if "video coming soon" in description.lower():
         return False
     if not " " in description.lower():
         return False
@@ -142,7 +144,7 @@ def find_valid_links_recursively(links):
         if "pages-signs" in link[1]:
             links.extend(get_links_from_vocab_page(link[1], link[0]))
             exit = False
-        if not validate_lesson_link(link[1], link[0]):
+        if not validate_link(link[1], link[0]):
             del links[i]
             exit = False
     if exit:
@@ -219,14 +221,20 @@ def get_dictionary_description(bs4_element, dictionary_word):
     # reverse text_array, then
     text_array.reverse()
     raw_description = "".join(text_array)
-    full_description = dictionary_word + " | " + raw_description
+    full_description = (
+        dictionary_word + " | " + raw_description
+        if raw_description != ""
+        else dictionary_word
+    )
     description = clean_description(full_description)
     return description
 
 
 def clean_description(title):
-    title = re.sub("(\n|\t|\r)+", "", title)
-    title = re.sub("\s\s+", " ", title)
+    title = re.sub("(\n|\t|\r)+", "", title) # remove newlines
+    title = re.sub("\s\s+", " ", title) # remove double spaces
+    title = re.sub("\d+.", "", title) # remove preceding numbers like 09.
+    title = re.sub('\:$', "", title) # remove : at the end
     title = title.strip()
     title = smart_truncate(title)
     return title

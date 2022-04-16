@@ -28,7 +28,9 @@ def post_from_dynamodb(reddit_creds, dynamodb_resource, dynamodb_client, table_n
         entry for entry in all_entries if entry.get("timesPosted") == min(times_posted)
     ]
     chosen_content = random.choice(least_posted_entries)
-    post_youtube(chosen_content, reddit_creds)
+    is_valid_link = validate_link(chosen_content["url"], chosen_content["description"])
+    if is_valid_link:
+        post_youtube(chosen_content, reddit_creds)
     updated_times_posted = str(chosen_content.get("timesPosted") + 1)
     try:
         dynamodb_client.update_item(
@@ -46,43 +48,6 @@ def post_from_dynamodb(reddit_creds, dynamodb_resource, dynamodb_client, table_n
         logger.info(chosen_content["url"])
 
 
-def parse_dictionary_content_page(url, name):
-    """
-    The content page contains images and videos describing the word
-    Takes a url (ex. https://lifeprint.com/asl101//pages-signs/a/active.htm)
-    """
-    page = requests.get(url, verify=verify(), timeout=TIMEOUT_SECONDS)
-    soup = BeautifulSoup(page.content, "html.parser")
-    videos = soup.find_all("iframe")
-    video_dict = {}
-    for video in videos:
-        row = {}
-        row["name"] = name
-        row["type"] = "youtube"
-        row["text"] = get_description(video)
-        row["location"] = video["src"]
-        video_dict[name] = row
-    return video_dict
-
-
-def get_description(element):
-    text_array = []
-    temp = element
-    while True:
-        temp = temp.previous
-        if temp.name == "hr" or temp.name == "font":
-            break
-        if isinstance(temp, type("bs4.element.NavigableString")):
-            text_array.append(temp)
-    # reverse text_array, then
-    text_array.reverse()
-    description = "".join(text_array)
-    # Clean for Reddit Title
-    description = re.sub("(\n|\t)+", "", description)
-    description = smart_truncate(description)
-    return description
-
-
 def smart_truncate(content, length=300, suffix="..."):
     # from https://stackoverflow.com/questions/250357/truncate-a-string-without-ending-in-the-middle-of-a-word
     if len(content) <= length:
@@ -92,7 +57,7 @@ def smart_truncate(content, length=300, suffix="..."):
 
 
 def post_youtube(content_dict, reddit_creds):
-    title = content_dict["description"]
+    title = clean_description(content_dict["description"])
     url = content_dict["url"]
     session = requests.Session()
     session.verify = False  # Disable SSL warnings
@@ -122,6 +87,42 @@ def load_creds_env():
 
 # TODO:
 ##  COMMON FUNCTIONS
+
+
+def validate_link(url, description):
+    if "youtube" not in url.lower():
+        return False
+    if "youtube.com/billvicars" in url.lower():
+        return False
+    if "video coming soon" in description.lower():
+        return False
+    if not " " in description.lower():
+        return False
+    if "playlist" in description.lower():
+        return False
+    if "quiz" in description.lower():
+        return False
+    return True
+
+
+def clean_description(title):
+    title = re.sub("(\n|\t|\r)+", "", title)  # remove newlines
+    title = re.sub("\s\s+", " ", title)  # remove double spaces
+    title = re.sub("\d+.", "", title)  # remove preceding numbers like 09.
+    title = re.sub("\:$", "", title)  # remove : at the end
+    title = title.strip()
+    title = smart_truncate(title)
+    return title
+
+
+def smart_truncate(content, length=300, suffix="..."):
+    # from https://stackoverflow.com/questions/250357/truncate-a-string-without-ending-in-the-middle-of-a-word
+    if len(content) <= length:
+        return content
+    else:
+        return " ".join(content[: length + 1].split(" ")[0:-1]) + suffix
+
+
 def dynamodb_scan(dynamodb_resource, table_name):
     table = dynamodb_resource.Table(table_name)
     scan = table.scan()
