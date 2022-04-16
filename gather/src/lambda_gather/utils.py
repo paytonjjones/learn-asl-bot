@@ -231,10 +231,10 @@ def get_dictionary_description(bs4_element, dictionary_word):
 
 
 def clean_description(title):
-    title = re.sub("(\n|\t|\r)+", "", title) # remove newlines
-    title = re.sub("\s\s+", " ", title) # remove double spaces
-    title = re.sub("\d+.", "", title) # remove preceding numbers like 09.
-    title = re.sub('\:$', "", title) # remove : at the end
+    title = re.sub("(\n|\t|\r)+", "", title)  # remove newlines
+    title = re.sub("\s\s+", " ", title)  # remove double spaces
+    title = re.sub("^\d+\.", "", title)  # remove preceding numbers like 09.
+    title = re.sub("\:$", "", title)  # remove : at the end
     title = title.strip()
     title = smart_truncate(title)
     return title
