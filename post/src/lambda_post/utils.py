@@ -108,7 +108,7 @@ def validate_link(url, description):
 def clean_description(title):
     title = re.sub("(\n|\t|\r)+", "", title)  # remove newlines
     title = re.sub("\s\s+", " ", title)  # remove double spaces
-    title = re.sub("\d+.", "", title)  # remove preceding numbers like 09.
+    title = re.sub("^\d+\.", "", title)  # remove preceding numbers like 09.
     title = re.sub("\:$", "", title)  # remove : at the end
     title = title.strip()
     title = smart_truncate(title)
