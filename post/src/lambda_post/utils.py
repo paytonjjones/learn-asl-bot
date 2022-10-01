@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import time
@@ -18,6 +19,8 @@ TIMEOUT_SECONDS = 5
 
 
 def post_from_dynamodb(reddit_creds, dynamodb_resource, dynamodb_client, table_name):
+    reddit_post_success = True
+    dynamo_update_success = True
     all_entries = dynamodb_scan(dynamodb_resource, table_name)
     times_posted = [
         dict.get("timesPosted")
@@ -30,7 +33,17 @@ def post_from_dynamodb(reddit_creds, dynamodb_resource, dynamodb_client, table_n
     chosen_content = random.choice(least_posted_entries)
     is_valid_link = validate_link(chosen_content["url"], chosen_content["description"])
     if is_valid_link:
-        post_youtube(chosen_content, reddit_creds)
+        try:
+            post_youtube(chosen_content, reddit_creds)
+        except Exception as e:
+            logger.info(e)
+            logger.info("Error posting to Reddit")
+            logger.info(chosen_content)
+            reddit_post_success = False
+    else:
+        logger.info("Invalid link")
+        logger.info(chosen_content["url"])
+        reddit_post_success = False
     updated_times_posted = str(chosen_content.get("timesPosted") + 1)
     try:
         dynamodb_client.update_item(
@@ -46,6 +59,20 @@ def post_from_dynamodb(reddit_creds, dynamodb_resource, dynamodb_client, table_n
     except Exception as e:
         logger.info(e)
         logger.info(chosen_content["url"])
+        dynamo_update_success = False
+    statusCode = 200 if reddit_post_success and dynamo_update_success else 400
+    message = ""
+    message += (
+        "Error posting to Reddit; "
+        if not reddit_post_success
+        else "Content successfully posted to Reddit; "
+    )
+    message += (
+        "Error updating DynamoDB"
+        if not dynamo_update_success
+        else "Content successfully updated on DynamoDB"
+    )
+    return {"statusCode": statusCode, "body": json.dumps(message)}
 
 
 def smart_truncate(content, length=300, suffix="..."):

@@ -23,13 +23,10 @@ def lambda_post(event, context):
         dynamodb_resource = boto3.resource(
             "dynamodb", region_name=creds["AWS_REGION"], verify=verify()
         )
-        post_from_dynamodb(
+        response = post_from_dynamodb(
             creds, dynamodb_resource, dynamodb_client, creds["DYNAMODB_TABLE_NAME"]
         )
     except Exception as e:
         return {"statusCode": 400, "body": json.dumps("Error:" + str(e))}
-    return {
-        "statusCode": 200,
-        "body": json.dumps("Content successfully posted to Reddit"),
-    }
+    return response
 
