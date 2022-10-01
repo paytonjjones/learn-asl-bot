@@ -4,6 +4,7 @@ import time
 import dotenv
 import requests
 import re
+import validators
 from boto3.dynamodb.conditions import Key
 
 from bs4 import BeautifulSoup
@@ -74,7 +75,7 @@ def get_new_youtube_links_from_dictionary_content_page(
     videos = soup.find_all("iframe")
     video_dict = {}
     for video in videos:
-        url = video["src"]
+        url = video["src"].replace(" ", "").replace("%20", "")
         description = get_dictionary_description(video, dictionary_word)
         is_valid_link = validate_link(url, description)
         if is_valid_link and url not in existing_urls:
@@ -123,6 +124,8 @@ def get_lesson_page_videos(lesson_number: str, existing_urls):
 
 
 def validate_link(url, description):
+    if not validators.url(url):
+        return False
     if "youtube" not in url.lower():
         return False
     if "youtube.com/billvicars" in url.lower():
